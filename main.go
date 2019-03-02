@@ -69,4 +69,20 @@ func main() {
 
 	fmt.Println("screenPID:" + screenPID)
 	fmt.Println("screenName:" + screenName)
+
+	stmt, err := db.Prepare("INSERT INTO ScreenInfo(PID, screen_name, up) VALUES(?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+	}
+
+	res, err := stmt.Exec(screenPID, screenName, 1)
+	if err != nil {
+		log.Println(err)
+	}
+
+	id, err := res.RowsAffected()
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(id)
 }
