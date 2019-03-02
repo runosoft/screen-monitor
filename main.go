@@ -8,6 +8,15 @@ import(
 	//"regexp"
 )
 
+type SQLStruct struct {
+	Storage StorageConfig `json:"db"`
+}
+
+type StorageConfig struct {
+	Driver string `json:"driver"`
+	Name string `json:"name"`
+}
+
 func main() {
 	out, err := exec.Command("screen", "-ls").Output()
 
