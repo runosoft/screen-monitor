@@ -5,7 +5,12 @@ import(
 	"fmt"
 	"strings"
 	"log"
-	//"regexp"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"database/sql"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type SQLStruct struct {
@@ -17,7 +22,31 @@ type StorageConfig struct {
 	Name string `json:"name"`
 }
 
+var config SQLStruct
+
+func readConfig(cfg *SQLStruct, configFileName string) {
+	configFileName, _ = filepath.Abs(configFileName)
+	log.Printf("Loading config: %v", configFileName)
+
+	configFile, err := os.Open(configFileName)
+	if err != nil {
+		log.Fatal("File error: ", err.Error())
+	}
+	defer configFile.Close()
+	jsonParser := json.NewDecoder(configFile)
+	if err := jsonParser.Decode(&cfg); err != nil {
+		log.Fatal("Config error: ", err.Error())
+	}
+
+}
 func main() {
+	readConfig(&config, "config.json")
+
+	db, err := sql.Open(config.Storage.Driver, config.Storage.Name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	out, err := exec.Command("screen", "-ls").Output()
 
 	//xregexString, _ := regexp.Compile("p([a-z]+)ch")
