@@ -1,16 +1,15 @@
 package main
 
-import(
-	"os/exec"
-	"fmt"
-	"strings"
-	"log"
+import (
+	//"database/sql"
 	"encoding/json"
+	//"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"database/sql"
-
-	_ "github.com/mattn/go-sqlite3"
+	"strings"
+	"time"
 )
 
 type SQLStruct struct {
@@ -19,18 +18,18 @@ type SQLStruct struct {
 
 type StorageConfig struct {
 	Driver string `json:"driver"`
-	Name string `json:"name"`
+	Name   string `json:"name"`
 }
 
 /* Holds screen informations from DB */
 type DBScreens struct {
-	PID string
+	PID  string
 	Name string
 }
 
 /* Holds screen informations from command */
 type SystemScreens struct {
-	PID string
+	PID  string
 	Name string
 }
 
@@ -49,54 +48,86 @@ func readConfig(cfg *SQLStruct, configFileName string) {
 
 	configFile, err := os.Open(configFileName)
 	if err != nil {
-		log.Fatalf("Error when opening %s: %s\n", configFilename ,err.Error())
+		log.Fatalf("Error when opening %s: %s\n", configFile, err.Error())
 	}
 	defer configFile.Close()
+
 	jsonParser := json.NewDecoder(configFile)
 	if err := jsonParser.Decode(&cfg); err != nil {
-		log.Fataf("Config error for %s: %s\n", configFilename, err.Error())
+		log.Fatalf("Config error for %s: %s\n", configFile, err.Error())
 	}
 }
 
-func readActiveScreensConfig(activeScreen *ActiveScreens, configFilename string) {
+func readActiveScreensConfig(activeScreen *ActiveScreens, configFileName string) {
 	configFileName, _ = filepath.Abs(configFileName)
 	log.Printf("Reading Active Screens: %v", configFileName)
 
 	configFile, err := os.Open(configFileName)
 	if err != nil {
-		log.Fatalf("Error when opening %s: %s\n", configFilename ,err.Error())
+		log.Fatalf("Error when opening %s: %s\n", configFileName, err.Error())
 	}
 	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
 	if err := jsonParser.Decode(&activeScreen); err != nil {
-		log.Fataf("Config error for %s: %s\n", configFilename, err.Error())
+		log.Fatalf("Config error for %s: %s\n", configFile, err.Error())
 	}
 }
 
 func main() {
 	readConfig(&config, "config.json")
-	readActiveScreensConfig(&activeScreens, "active_screen.json")
 
-	db, err := sql.Open(config.Storage.Driver, config.Storage.Name)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var systemScreens []string
+	/* update running screens every 30 secs. */
+	operationDone := make(chan bool)
 
-	screenStruct := updateScreenList(db)
-	log.Println(screenStruct)
+	go func() {
+		for {
+			systemScreens = updateSystemScreen()
+			operationDone <- true
 
-	checkScreens()
+			time.Sleep(30 * time.Second)
+
+			readActiveScreensConfig(&activeScreens, "active_screen.json")
+			operationDone <- true
+
+			time.Sleep(10 * time.Minute)
+
+			checkScreens(activeScreens, systemScreens)
+			operationDone <- true
+
+			time.Sleep(1 * time.Minute)
+		}
+	}()
 }
 
-func checkScreens(screens []DBScreens) {
-	for i := 0; i < len(screens); i++ {
-		
+func checkScreens(activeScreensCfg ActiveScreens, systemScreens []string) {
+	for _, value := range activeScreensCfg.Names {
+		exists := contains(systemScreens, value)
+		if exists {
+			log.Printf("%s is running.\n", value)
+		} else {
+			sendCrashMessage(value)
+			log.Printf("%s is not running\n", value)
+		}
 	}
 }
 
-/* Parses output of screen -ls command to SystemScreens 
+func contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
+}
+
+func sendCrashMessage(screenName string) {
+	log.Printf("%s is crashed.\n", screenName)
+}
+
+/* Parses output of screen -ls command to SystemScreens
  * struct. */
-func updateSystemScreen() []SystemScreens{
+func updateSystemScreen() []string {
 	out, err := exec.Command("screen", "-ls").Output()
 	if err != nil {
 		log.Fatalf("Error while executing screen -ls command: %s\n", err)
@@ -104,7 +135,7 @@ func updateSystemScreen() []SystemScreens{
 	screenOut := string(out)
 	screenOutLineArr := strings.Split(screenOut, "\n")
 
-	var screenStructArr []SystemScreens
+	var sysScreenNames []string
 	var pureScreen []string
 
 	for i := 1; i < len(screenOutLineArr)-2; i++ {
@@ -116,55 +147,9 @@ func updateSystemScreen() []SystemScreens{
 		screenOutArr := strings.Split(screenOut, "\t")
 		screenOut = screenOutArr[0]
 		screenOutArr = strings.Split(screenOut, ".")
-		screenPID := screenOutArr[0]
 		screenName := screenOutArr[1]
 
-		systemScreens := SystemScreens{
-			PID: screenPID,
-			Name: screenName,
-		}
-
-		screenStructArr = append(screenStructArr, SystemScreens)
+		sysScreenNames = append(sysScreenNames, screenName)
 	}
-	return screenStructArr
-}
-
-/* Gets screen PIDs, names from DB and parse them to
- * the DBScreens struct. */
-func updateDBScreen(db *sql.DB) []DBScreens {
-	var screenStructArr []DBScreens
-
-	rows, err := db.Query("SELECT PID, screen_name FROM ScreenInfo")
-	if err != nil {
-		log.Printf("Error while getting PID and screen_name from DB: %s\n", err)
-	}
-
-	var dbScreenPID string
-	var dbScreenName string
-
-	for rows.Next() {
-		err = rows.Scan(&dbScreenPID, &dbScreenName)
-		if err != nil {
-			log.Printf("Error while scanning screen info from DB: %s\n", err)
-		}
-
-		dbScreens := DBScreens{
-			PID: dbScreenPID,
-			Name: dbScreenName,
-		}
-		screenStructArr = append(screenStructArr, screenStruct)
-	}
-	return screenStructArr
-}
-
-func RowExists(db *sql.DB, pid string) bool {
-	existQuery := "SELECT exists(SELECT PID FROM ScreenInfo WHERE PID=?)"
-	var exists bool
-
-	err := db.QueryRow(existQuery, pid).Scan(&exists)
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Error when getting existence of pid from DB: %s\n", err)
-		return false
-	}
-	return exists
+	return sysScreenNames
 }
