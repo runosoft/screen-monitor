@@ -11,4 +11,7 @@ run:
 	$(GOBUILD) -o $(BINARY_NAME) -v ./...
 	./$(BINARY_NAME)
 deps:
-	$(GOGET) github.com/mattn/go-sqlite3
+	$(GOGET) github.com/mackerelio/go-osstat/memory
+	$(GOGET) github.com/mackerelio/go-osstat/cpu
+	$(GOGET) github.com/mackerelio/go-osstat/uptime
+	$(GOGET) github.com/mackerelio/go-osstat/disk

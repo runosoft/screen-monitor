@@ -1,15 +1,14 @@
 package main
 
 import (
-	//"database/sql"
 	"encoding/json"
-	//"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+	"runtime"
 )
 
 type SQLStruct struct {
@@ -76,28 +75,27 @@ func readActiveScreensConfig(activeScreen *ActiveScreens, configFileName string)
 func main() {
 	readConfig(&config, "config.json")
 
-	var systemScreens []string
-	/* update running screens every 30 secs. */
-	operationDone := make(chan bool)
+	runtime.GOMAXPROCS(2)
 
-	go func() {
-		for {
-			systemScreens = updateSystemScreen()
-			operationDone <- true
+	go runThread()
 
-			time.Sleep(30 * time.Second)
+	quit := make(chan bool)
+	<-quit
 
-			readActiveScreensConfig(&activeScreens, "active_screen.json")
-			operationDone <- true
+}
 
-			time.Sleep(10 * time.Minute)
+func runThread() {
+	for {
+		log.Println("starting system screen update.")
+		systemScreens := updateSystemScreen()
 
-			checkScreens(activeScreens, systemScreens)
-			operationDone <- true
+		log.Println("reading active screen config.")
+		go readActiveScreensConfig(&activeScreens, "active_screen.json")
 
-			time.Sleep(1 * time.Minute)
-		}
-	}()
+		log.Println("checking screens.")
+		go checkScreens(activeScreens, systemScreens)
+		time.Sleep(30 * time.Second)
+	}
 }
 
 func checkScreens(activeScreensCfg ActiveScreens, systemScreens []string) {
