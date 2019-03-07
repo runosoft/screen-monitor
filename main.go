@@ -9,21 +9,46 @@ import (
 	"strings"
 	"time"
 	"runtime"
+	"strconv"
+
+	"github.com/mackerelio/go-osstat/memory"
+	"github.com/mackerelio/go-osstat/cpu"
+	"github.com/mackerelio/go-osstat/uptime"
+	"github.com/mackerelio/go-osstat/disk"
+	"github.com/mackerelio/go-osstat/network"
+	"github.com/mackerelio/go-osstat/loadavg"
 )
 
-type SQLStruct struct {
-	Storage StorageConfig `json:"db"`
+type PureSystemStat struct {
+	MemoryTotal uint64
+	MemoryFree uint64
+	MemoryAvailable uint64
+	SwapTotal uint64
+	SwapFree uint64
+	CPUSystem uint64
+	CPUIdle uint64
+	UpTime time.Duration
+	DiskStats []disk.Stats
+	NetworkStats []network.Stats
+	LoadAvg1 float64
+	LoadAvg5 float64
+	LoadAvg15 float64
 }
 
-type StorageConfig struct {
-	Driver string `json:"driver"`
-	Name   string `json:"name"`
-}
-
-/* Holds screen informations from DB */
-type DBScreens struct {
-	PID  string
-	Name string
+type StringSystemStat struct {
+	StrMemoryTotal string
+	StrMemoryFree string
+	StrMemoryAvailable string
+	StrSwapTotal string
+	StrSwapFree string
+	StrCPUSystem string
+	StrCPUIdle string
+	StrUpTime time.Duration
+	StrDiskStats []disk.Stats
+	StrNetworkStats []network.Stats
+	StrLoadAvg1 string
+	StrLoadAvg5 string
+	StrLoadAvg15 string
 }
 
 /* Holds screen informations from command */
@@ -38,24 +63,7 @@ type ActiveScreens struct {
 	Names []string `json:"activeScreen"`
 }
 
-var config SQLStruct
 var activeScreens ActiveScreens
-
-func readConfig(cfg *SQLStruct, configFileName string) {
-	configFileName, _ = filepath.Abs(configFileName)
-	log.Printf("Loading config: %v", configFileName)
-
-	configFile, err := os.Open(configFileName)
-	if err != nil {
-		log.Fatalf("Error when opening %s: %s\n", configFile, err.Error())
-	}
-	defer configFile.Close()
-
-	jsonParser := json.NewDecoder(configFile)
-	if err := jsonParser.Decode(&cfg); err != nil {
-		log.Fatalf("Config error for %s: %s\n", configFile, err.Error())
-	}
-}
 
 func readActiveScreensConfig(activeScreen *ActiveScreens, configFileName string) {
 	configFileName, _ = filepath.Abs(configFileName)
@@ -94,6 +102,9 @@ func runThread() {
 
 		log.Println("checking screens.")
 		go checkScreens(activeScreens, systemScreens)
+
+		systemStats := collectSystemStats()
+		log.Println(systemStats)
 		time.Sleep(30 * time.Second)
 	}
 }
@@ -150,4 +161,89 @@ func updateSystemScreen() []string {
 		sysScreenNames = append(sysScreenNames, screenName)
 	}
 	return sysScreenNames
+}
+
+func collectSystemStats() PureSystemStat {
+	memStats, err := memory.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	cpuStats, err := cpu.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	upTime, err := uptime.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	diskStats, err := disk.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	netStats, err := network.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	loadAvg, err := loadavg.Get()
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Printf("MemoryTotal: %s\n", formatSizeUint64(memStats.Total))
+
+	strSystemStat := StringSystemStat{
+		StrMemoryTotal: formatSizeUint64(memStats.Total),
+		StrMemoryFree: formatSizeUint64(memStats.Free),
+		StrMemoryAvailable: formatSizeUint64(memStats.Available),
+		StrSwapTotal: formatSizeUint64(memStats.SwapTotal),
+		StrSwapFree: formatSizeUint64(memStats.SwapFree),
+		StrCPUSystem: formatSizeUint64(cpuStats.System),
+		StrCPUIdle: formatSizeUint64(cpuStats.Idle),
+		StrLoadAvg1: formatSizeFloat64(loadAvg.Loadavg1),
+		StrLoadAvg5: formatSizeFloat64(loadAvg.Loadavg5),
+		StrLoadAvg15: formatSizeFloat64(loadAvg.Loadavg15),
+	}
+
+	log.Println(strSystemStat)
+
+	return PureSystemStat{
+		MemoryTotal: memStats.Total,
+		MemoryFree: memStats.Free,
+		MemoryAvailable: memStats.Available,
+		SwapTotal: memStats.SwapTotal,
+		SwapFree: memStats.SwapFree,
+		CPUSystem: cpuStats.System,
+		CPUIdle: cpuStats.Idle,
+		UpTime: upTime,
+		DiskStats: diskStats,
+		NetworkStats: netStats,
+		LoadAvg1: loadAvg.Loadavg1,
+		LoadAvg5: loadAvg.Loadavg5,
+		LoadAvg15: loadAvg.Loadavg15,
+	}
+}
+
+func formatSizeUint64(data uint64) string {
+	var units = [5]string{"B", "KB", "MB", "GB", "TB"}
+
+	floatData := float64(data)
+
+	i := 0
+	for ; floatData > 1024; {
+		floatData = floatData / 1024
+		i++
+	}
+
+	s := strconv.FormatFloat(floatData, 'f', 6, 64) + units[i]
+	return s
+}
+
+func formatSizeFloat64(data float64) string {
+	s := strconv.FormatFloat(data, 'f', 3, 64)
+	return s
 }

@@ -15,3 +15,5 @@ deps:
 	$(GOGET) github.com/mackerelio/go-osstat/cpu
 	$(GOGET) github.com/mackerelio/go-osstat/uptime
 	$(GOGET) github.com/mackerelio/go-osstat/disk
+	$(GOGET) github.com/mackerelio/go-osstat/network
+	$(GOGET) github.com/mackerelio/go-osstat/loadavg
