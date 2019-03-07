@@ -19,37 +19,79 @@ import (
 	"github.com/mackerelio/go-osstat/loadavg"
 )
 
-type PureSystemStat struct {
-	MemoryTotal uint64
-	MemoryFree uint64
-	MemoryAvailable uint64
-	SwapTotal uint64
-	SwapFree uint64
-	CPUSystem uint64
-	CPUIdle uint64
-	UpTime time.Duration
-	DiskStats []disk.Stats
-	NetworkStats []network.Stats
-	LoadAvg1 float64
-	LoadAvg5 float64
-	LoadAvg15 float64
+/* string os stats structs */
+type StrCPUStat struct {
+	User string `json:"user"`
+	System string `json:"system"`
+	Idle string `json:"idle"`
 }
 
-type StringSystemStat struct {
-	StrMemoryTotal string
-	StrMemoryFree string
-	StrMemoryAvailable string
-	StrSwapTotal string
-	StrSwapFree string
-	StrCPUSystem string
-	StrCPUIdle string
-	StrUpTime time.Duration
-	StrDiskStats []disk.Stats
-	StrNetworkStats []network.Stats
-	StrLoadAvg1 string
-	StrLoadAvg5 string
-	StrLoadAvg15 string
+type StrLoadAverage struct {
+	Avg1 string `json:"avg1"`
+	Avg5 string `json:"avg5"`
+	Avg15 string `json:"avg15"`
 }
+
+type StrOsStat struct {
+	Memory StrMemoryStat `json:"memoryStat"`
+	CPU StrCPUStat `json:"cpuStat"`
+	Uptime string `json:"uptime"`
+	Disk []StrDiskStats `json:"diskStat"`
+	Network []StrNetStats `json:"networkStat"`
+	LoadAverage StrLoadAverage `json:"loadAverage"`
+}
+
+type StrMemoryStat struct {
+	Total string `json:"total"`
+	Free string `json:"free"`
+	Available string `json:"available"`
+	SwapTotal string `json:"swapTotal"`
+	SwapFree string `json:"swapFree"`
+}
+
+type StrDiskStats struct {
+	Name string `json:"name"`
+	ReadsCompleted string `json:"readsCompleted"`
+	WritesCompleted string `json:"writesCompleted"`
+}
+
+type StrNetStats struct {
+	Name string `json:"name"`
+	RxBytes string `json:"rxBytes"`
+	TxBytes string `json:"txBytes"`
+}
+
+/* pure os stat structs */
+
+type OsStat struct {
+	Memory MemoryStat `json:"memoryStat"`
+	CPU CPUStat `json:"cpuStat"`
+	Uptime time.Duration `json:"uptime"`
+	Disk []disk.Stats `json:"diskStat"`
+	Network []network.Stats `json:"networkStat"`
+	LoadAvg LoadAverage `json:"loadAverage"`
+}
+
+type MemoryStat struct {
+	Total uint64 `json:"total"`
+	Free uint64 `json:"free"`
+	Available uint64 `json:"available"`
+	SwapTotal uint64 `json:"swapTotal"`
+	SwapFree uint64 `json:"swapFree"`
+}
+
+type CPUStat struct {
+	User uint64 `json:"user"`
+	System uint64 `json:"system"`
+	Idle uint64 `json:"idle"`
+}
+
+type LoadAverage struct {
+	Avg1 float64 `json:"avg1"`
+	Avg5 float64 `json:"avg5"`
+	Avg15 float64 `json:"avg15"`
+}
+
 
 /* Holds screen informations from command */
 type SystemScreens struct {
@@ -81,7 +123,6 @@ func readActiveScreensConfig(activeScreen *ActiveScreens, configFileName string)
 }
 
 func main() {
-	readConfig(&config, "config.json")
 
 	runtime.GOMAXPROCS(2)
 
@@ -103,8 +144,9 @@ func runThread() {
 		log.Println("checking screens.")
 		go checkScreens(activeScreens, systemScreens)
 
-		systemStats := collectSystemStats()
+		systemStats, strSystemStats := collectSystemStats()
 		log.Println(systemStats)
+		log.Println(strSystemStats)
 		time.Sleep(30 * time.Second)
 	}
 }
@@ -163,7 +205,7 @@ func updateSystemScreen() []string {
 	return sysScreenNames
 }
 
-func collectSystemStats() PureSystemStat {
+func collectSystemStats() (OsStat, StrOsStat) {
 	memStats, err := memory.Get()
 	if err != nil {
 		log.Println(err)
@@ -194,37 +236,87 @@ func collectSystemStats() PureSystemStat {
 		log.Println(err)
 	}
 
-	log.Printf("MemoryTotal: %s\n", formatSizeUint64(memStats.Total))
+	/* parse disk stats */
+	var strDiskStats []StrDiskStats
 
-	strSystemStat := StringSystemStat{
-		StrMemoryTotal: formatSizeUint64(memStats.Total),
-		StrMemoryFree: formatSizeUint64(memStats.Free),
-		StrMemoryAvailable: formatSizeUint64(memStats.Available),
-		StrSwapTotal: formatSizeUint64(memStats.SwapTotal),
-		StrSwapFree: formatSizeUint64(memStats.SwapFree),
-		StrCPUSystem: formatSizeUint64(cpuStats.System),
-		StrCPUIdle: formatSizeUint64(cpuStats.Idle),
-		StrLoadAvg1: formatSizeFloat64(loadAvg.Loadavg1),
-		StrLoadAvg5: formatSizeFloat64(loadAvg.Loadavg5),
-		StrLoadAvg15: formatSizeFloat64(loadAvg.Loadavg15),
+	for i := 0; i <= len(diskStats)-1; i++ {
+		sReadsCompleted := formatSizeUint64(diskStats[i].ReadsCompleted)
+		sWritesCompleted := formatSizeUint64(diskStats[i].WritesCompleted)
+
+		tempDiskStats := StrDiskStats {
+			Name: diskStats[i].Name,
+			ReadsCompleted: sReadsCompleted,
+			WritesCompleted: sWritesCompleted,
+		}
+		strDiskStats = append(strDiskStats, tempDiskStats)
 	}
 
-	log.Println(strSystemStat)
+	/* parse network stats */
+	var strNetStats []StrNetStats
 
-	return PureSystemStat{
-		MemoryTotal: memStats.Total,
-		MemoryFree: memStats.Free,
-		MemoryAvailable: memStats.Available,
-		SwapTotal: memStats.SwapTotal,
-		SwapFree: memStats.SwapFree,
-		CPUSystem: cpuStats.System,
-		CPUIdle: cpuStats.Idle,
-		UpTime: upTime,
-		DiskStats: diskStats,
-		NetworkStats: netStats,
-		LoadAvg1: loadAvg.Loadavg1,
-		LoadAvg5: loadAvg.Loadavg5,
-		LoadAvg15: loadAvg.Loadavg15,
+	for i := 0; i <= len(netStats)-1; i++ {
+		sRxBytes := formatSizeUint64(netStats[i].RxBytes)
+		sTxBytes := formatSizeUint64(netStats[i].TxBytes)
+
+		tempNetStats := StrNetStats {
+			Name: netStats[i].Name,
+			RxBytes: sRxBytes,
+			TxBytes: sTxBytes,
+		}
+		strNetStats = append(strNetStats, tempNetStats)
+	}
+
+	//upTimeStr := upTime.String()
+
+	//log.Println(time.Parse(time.UnixDate, upTimeStr))
+
+	//log.Println(upTime.String())
+	//log.Println(upTime.Format("2006-01-02 15:04:05"))
+	//log.Println(strSystemStat)
+
+
+	return OsStat {
+		Memory: MemoryStat {
+			Total: memStats.Total,
+			Free: memStats.Free,
+			Available: memStats.Available,
+			SwapTotal: memStats.SwapTotal,
+			SwapFree: memStats.SwapFree,
+		},
+		CPU: CPUStat {
+			User: cpuStats.User,
+			System: cpuStats.System,
+			Idle: cpuStats.Idle,
+		},
+		Uptime: upTime,
+		Disk: diskStats,
+		Network: netStats,
+		LoadAvg: LoadAverage{
+			Avg1: loadAvg.Loadavg1,
+			Avg5: loadAvg.Loadavg5,
+			Avg15: loadAvg.Loadavg15,
+		},
+	}, StrOsStat {
+		Memory: StrMemoryStat {
+			Total: formatSizeUint64(memStats.Total),
+			Free: formatSizeUint64(memStats.Free),
+			Available: formatSizeUint64(memStats.Available),
+			SwapTotal: formatSizeUint64(memStats.SwapTotal),
+			SwapFree: formatSizeUint64(memStats.SwapFree),
+		},
+		CPU: StrCPUStat {
+			User: strconv.FormatUint(cpuStats.System, 10),
+			System: strconv.FormatUint(cpuStats.System, 10),
+			Idle: strconv.FormatUint(cpuStats.Idle, 10),
+		},
+		Uptime: upTime.String(),
+		Disk: strDiskStats,
+		Network: strNetStats,
+		LoadAverage: StrLoadAverage {
+			Avg1: formatSizeFloat64(loadAvg.Loadavg1),
+			Avg5: formatSizeFloat64(loadAvg.Loadavg5),
+			Avg15: formatSizeFloat64(loadAvg.Loadavg15),
+		},
 	}
 }
 
@@ -239,11 +331,11 @@ func formatSizeUint64(data uint64) string {
 		i++
 	}
 
-	s := strconv.FormatFloat(floatData, 'f', 6, 64) + units[i]
+	s := strconv.FormatFloat(floatData, 'f', 2, 64) + units[i]
 	return s
 }
 
 func formatSizeFloat64(data float64) string {
-	s := strconv.FormatFloat(data, 'f', 3, 64)
+	s := strconv.FormatFloat(data, 'f', 2, 64)
 	return s
 }
