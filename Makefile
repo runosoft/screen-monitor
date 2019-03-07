@@ -17,3 +17,4 @@ deps:
 	$(GOGET) github.com/mackerelio/go-osstat/disk
 	$(GOGET) github.com/mackerelio/go-osstat/network
 	$(GOGET) github.com/mackerelio/go-osstat/loadavg
+	$(GOGET) github.com/gorilla/mux
