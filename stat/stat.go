@@ -34,6 +34,8 @@ type StrLoadAverage struct {
 }
 
 type StrOsStat struct {
+	Hostname string `json:"hostname"`
+	Timestamp string `json:"timestamp"`
 	Memory StrMemoryStat `json:"memoryStat"`
 	CPU StrCPUStat `json:"cpuStat"`
 	Uptime string `json:"uptime"`
@@ -65,6 +67,8 @@ type StrNetStats struct {
 /* pure os stat structs */
 
 type OsStat struct {
+	Hostname string `json:"hostname"`
+	Timestamp string `json:"timestamp"`
 	Memory MemoryStat `json:"memoryStat"`
 	CPU CPUStat `json:"cpuStat"`
 	Uptime time.Duration `json:"uptime"`
@@ -101,6 +105,8 @@ type SystemScreen struct {
 }
 
 type SystemScreens struct {
+	Hostname string `json:"hostname"`
+	Timestamp string `json:"timestamp"`
 	Screens []SystemScreen `json:"screens"`
 }
 
@@ -151,11 +157,21 @@ func CollectSystemStats() (*OsStat, error) {
 	//log.Println(upTime.Format("2006-01-02 15:04:05"))
 	//log.Println(strSystemStat)
 
-	cpuPercentage := float64((cpuStats.User + cpuStats.System)) / float64(cpuStats.Idle)
-	cpuPercentage = cpuPercentage * 100
-	log.Println("cpu percentage", cpuPercentage)
+	log.Println("Collecting os stats.")
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	timestamp := time.Now()
+	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
+	log.Printf("Stat Timestamp: %s", timestampStr)
+
 
 	return &OsStat {
+		Hostname: hostname,
+		Timestamp: timestampStr,
 		Memory: MemoryStat {
 			Total: memStats.Total,
 			Free: memStats.Free,
@@ -167,7 +183,6 @@ func CollectSystemStats() (*OsStat, error) {
 			User: cpuStats.User,
 			System: cpuStats.System,
 			Idle: cpuStats.Idle,
-			Percentage: cpuPercentage,
 		},
 		Uptime: upTime,
 		Disk: diskStats,
@@ -185,9 +200,6 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("osstats")
-	log.Println(osStats)
 
 		/* parse disk stats */
 	var strDiskStats []StrDiskStats
@@ -211,7 +223,6 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 		sRxBytes := formatSizeUint64(osStats.Network[i].RxBytes)
 		sTxBytes := formatSizeUint64(osStats.Network[i].TxBytes)
 
-		log.Println("osstats network")
 		log.Println(osStats.Network[i])
 		tempNetStats := StrNetStats {
 			Name: osStats.Disk[i].Name,
@@ -229,7 +240,11 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 	//log.Println(upTime.Format("2006-01-02 15:04:05"))
 	//log.Println(strSystemStat)
 
+	log.Println("Collecting os stats in string format.")
+
 	return &StrOsStat {
+		Hostname: osStats.Hostname,
+		Timestamp: osStats.Timestamp,
 		Memory: StrMemoryStat {
 			Total: formatSizeUint64(osStats.Memory.Total),
 			Free: formatSizeUint64(osStats.Memory.Free),
@@ -261,9 +276,21 @@ func CollectScreenStats() (*SystemScreens, error) {
 	}
 
 	systemScreen := updateSystemScreen()
+
 	checkScreens := CheckScreens(activeScreen, systemScreen)
 
+	timestamp := time.Now()
+	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
+	log.Printf("Screens Timestamp: %s", timestampStr)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	return &SystemScreens{
+		Hostname: hostname,
+		Timestamp: timestampStr,
 		Screens: checkScreens,
 	}, nil
 }
@@ -306,7 +333,7 @@ func CheckScreens(activeScreens *ActiveScreens, systemScreens []string) []System
 				Up: false,
 			}
 			sendCrashMessage(value)
-			log.Printf("%s is not running\n", value)
+			log.Printf("%s is NOT running\n", value)
 		}
 		sysScreens = append(sysScreens, systemScreen)
 	}
