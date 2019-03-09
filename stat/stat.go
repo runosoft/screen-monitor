@@ -340,8 +340,6 @@ func updateSystemScreen() []string {
 	screenOut := string(out)
 	screenOutLineArr := strings.Split(screenOut, "\n")
 
-	log.Println("lenght of no screen element output:", len(screenOutLineArr))
-
 	var pureScreen []string
 
 	for i := 1; i < len(screenOutLineArr)-2; i++ {
