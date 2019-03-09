@@ -17,9 +17,9 @@ func Start() {
 	log.Println("Starting the Api")
 	log.Printf("Api Listen: %s\n", apiListen)
 
-	router.HandleFunc("/api/osstat",
+	router.HandleFunc("/api/osstats",
 		collectSystemStats).Methods("GET")
-	router.HandleFunc("/api/strosstat",
+	router.HandleFunc("/api/strosstats",
 		collectStrSystemStats).Methods("GET")
 	router.HandleFunc("/api/screens",
 		collectScreenStats).Methods("GET")
