@@ -334,7 +334,7 @@ func updateSystemScreen() []string {
 
 	out, err := exec.Command("screen", "-ls").Output()
 	if err != nil {
-		log.Println("Error while executing screen -ls command: %s\n", err)
+		log.Printf("Error while executing screen -ls command: %s\n", err)
 		return sysScreenNames
 	}
 	screenOut := string(out)
