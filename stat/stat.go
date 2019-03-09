@@ -10,7 +10,6 @@ import(
 	"path/filepath"
 	"strings"
 
-
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/uptime"
@@ -331,14 +330,18 @@ func sendCrashMessage(screenName string) {
 /* Parses output of screen -ls command to SystemScreens
  * struct. */
 func updateSystemScreen() []string {
+	var sysScreenNames []string
+
 	out, err := exec.Command("screen", "-ls").Output()
 	if err != nil {
-		log.Fatalf("Error while executing screen -ls command: %s\n", err)
+		log.Println("Error while executing screen -ls command: %s\n", err)
+		return sysScreenNames
 	}
 	screenOut := string(out)
 	screenOutLineArr := strings.Split(screenOut, "\n")
 
-	var sysScreenNames []string
+	log.Println("lenght of no screen element output:", len(screenOutLineArr))
+
 	var pureScreen []string
 
 	for i := 1; i < len(screenOutLineArr)-2; i++ {
