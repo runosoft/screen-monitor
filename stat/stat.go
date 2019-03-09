@@ -24,7 +24,9 @@ type StrCPUStat struct {
 	User string `json:"user"`
 	System string `json:"system"`
 	Idle string `json:"idle"`
-	Percentage string `json:"percentage"`
+	UserPercentage string `json:"userPercentage"`
+	SystemPercentage string `json:"systemPercentage"`
+	IdlePercentage string `json:"idlePercentage"`
 }
 
 type StrLoadAverage struct {
@@ -34,8 +36,8 @@ type StrLoadAverage struct {
 }
 
 type StrOsStat struct {
-	Hostname string `json:"hostname"`
 	Timestamp string `json:"timestamp"`
+	Hostname string `json:"hostname"`
 	Memory StrMemoryStat `json:"memoryStat"`
 	CPU StrCPUStat `json:"cpuStat"`
 	Uptime string `json:"uptime"`
@@ -67,8 +69,8 @@ type StrNetStats struct {
 /* pure os stat structs */
 
 type OsStat struct {
+	Timestamp int64 `json:"timestamp"`
 	Hostname string `json:"hostname"`
-	Timestamp string `json:"timestamp"`
 	Memory MemoryStat `json:"memoryStat"`
 	CPU CPUStat `json:"cpuStat"`
 	Uptime time.Duration `json:"uptime"`
@@ -89,7 +91,9 @@ type CPUStat struct {
 	User uint64 `json:"user"`
 	System uint64 `json:"system"`
 	Idle uint64 `json:"idle"`
-	Percentage float64 `json:"percentage"`
+	UserPercentage float64 `json:"userPercentage"`
+	SystemPercentage float64 `json:"systemPercentage"`
+	IdlePercentage float64 `json:"idlePercentage"`
 }
 
 type LoadAverage struct {
@@ -105,8 +109,8 @@ type SystemScreen struct {
 }
 
 type SystemScreens struct {
+	Timestamp int64 `json:"timestamp"`
 	Hostname string `json:"hostname"`
-	Timestamp string `json:"timestamp"`
 	Screens []SystemScreen `json:"screens"`
 }
 
@@ -115,6 +119,9 @@ type SystemScreens struct {
 type ActiveScreens struct {
 	Names []string `json:"activeScreen"`
 }
+
+var GlobalOsStats *OsStat
+var GlobalStrOsStats *StrOsStat
 
 var activeScreens ActiveScreens
 
@@ -157,21 +164,41 @@ func CollectSystemStats() (*OsStat, error) {
 	//log.Println(upTime.Format("2006-01-02 15:04:05"))
 	//log.Println(strSystemStat)
 
+	var innerOsStat OsStat
 	log.Println("Collecting os stats.")
+
+	timestamp := time.Now().Unix()
 
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
-	timestamp := time.Now()
-	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
-	log.Printf("Stat Timestamp: %s", timestampStr)
+	// calculate cpu usage percentage
+	before, err := cpu.Get()
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(time.Duration(1) * time.Second)
+	after, err := cpu.Get()
+	if err != nil {
+		return nil, err
+	}
+	total := float64(after.Total - before.Total)
 
+	userPercentage := float64(after.User-before.User)/total*100
+	systemPercentage := float64(after.System-before.System)/total*100
+	idlePercentage := float64(after.Idle-before.Idle)/total*100
 
-	return &OsStat {
+	/*
+	fmt.Printf("cpu user: %f %%\n", float64(after.User-before.User)/total*100)
+	fmt.Printf("cpu system: %f %%\n", float64(after.System-before.System)/total*100)
+	fmt.Printf("cpu idle: %f %%\n", float64(after.Idle-before.Idle)/total*100)
+	*/
+
+	innerOsStat = OsStat {
+		Timestamp: timestamp,
 		Hostname: hostname,
-		Timestamp: timestampStr,
 		Memory: MemoryStat {
 			Total: memStats.Total,
 			Free: memStats.Free,
@@ -183,6 +210,9 @@ func CollectSystemStats() (*OsStat, error) {
 			User: cpuStats.User,
 			System: cpuStats.System,
 			Idle: cpuStats.Idle,
+			UserPercentage: userPercentage,
+			SystemPercentage: systemPercentage,
+			IdlePercentage: idlePercentage,
 		},
 		Uptime: upTime,
 		Disk: diskStats,
@@ -192,7 +222,11 @@ func CollectSystemStats() (*OsStat, error) {
 			Avg5: loadAvg.Loadavg5,
 			Avg15: loadAvg.Loadavg15,
 		},
-	}, nil
+	}
+
+	GlobalOsStats = &innerOsStat
+
+	return &innerOsStat, nil
 }
 
 func CollectStrSystemStats() (*StrOsStat, error) {
@@ -240,11 +274,15 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 	//log.Println(upTime.Format("2006-01-02 15:04:05"))
 	//log.Println(strSystemStat)
 
-	log.Println("Collecting os stats in string format.")
+	timestamp := time.Now()
+	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
 
-	return &StrOsStat {
+	log.Println("Collecting os stats in string format.")
+	var innerStrOsStat StrOsStat
+
+	innerStrOsStat = StrOsStat {
+		Timestamp: timestampStr,
 		Hostname: osStats.Hostname,
-		Timestamp: osStats.Timestamp,
 		Memory: StrMemoryStat {
 			Total: formatSizeUint64(osStats.Memory.Total),
 			Free: formatSizeUint64(osStats.Memory.Free),
@@ -256,7 +294,9 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 			User: strconv.FormatUint(osStats.CPU.User, 10),
 			System: strconv.FormatUint(osStats.CPU.System, 10),
 			Idle: strconv.FormatUint(osStats.CPU.Idle, 10),
-			Percentage: "%"+formatSizeFloat64(osStats.CPU.Percentage),
+			UserPercentage: "%"+formatSizeFloat64(osStats.CPU.UserPercentage),
+			SystemPercentage: "%"+formatSizeFloat64(osStats.CPU.SystemPercentage),
+			IdlePercentage: "%"+formatSizeFloat64(osStats.CPU.IdlePercentage),
 		},
 		Uptime: osStats.Uptime.String(),
 		Disk: strDiskStats,
@@ -266,10 +306,14 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 			Avg5: formatSizeFloat64(osStats.LoadAvg.Avg5),
 			Avg15: formatSizeFloat64(osStats.LoadAvg.Avg15),
 		},
-	}, nil
+	}
+	GlobalStrOsStats = &innerStrOsStat
+	return &innerStrOsStat, nil
 }
 
 func CollectScreenStats() (*SystemScreens, error) {
+	log.Println("Collecting screen stats.")
+
 	activeScreen, err := readActiveScreensConfig("active_screen.json")
 	if err != nil {
 		return nil, err
@@ -279,18 +323,16 @@ func CollectScreenStats() (*SystemScreens, error) {
 
 	checkScreens := CheckScreens(activeScreen, systemScreen)
 
-	timestamp := time.Now()
-	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
-	log.Printf("Screens Timestamp: %s", timestampStr)
-
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
+	timestamp := time.Now().Unix()
+
 	return &SystemScreens{
+		Timestamp: timestamp,
 		Hostname: hostname,
-		Timestamp: timestampStr,
 		Screens: checkScreens,
 	}, nil
 }
@@ -401,4 +443,12 @@ func readActiveScreensConfig(configFileName string) (*ActiveScreens, error) {
 	}
 
 	return &activeScreen, nil
+}
+
+func ReturnSystemStats() *OsStat {
+	return GlobalOsStats
+}
+
+func ReturnStrSystemStats() *StrOsStat {
+	return GlobalStrOsStats
 }

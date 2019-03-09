@@ -39,6 +39,11 @@ func runThread() {
 			log.Println(err)
 		}
 
+		_, err = stat.CollectStrSystemStats()
+		if err != nil {
+			log.Println(err)
+		}
+
 		/*
 		strSystemStats, err := stat.CollectStrSystemStats()
 		if err != nil {
@@ -50,7 +55,6 @@ func runThread() {
 		if err != nil {
 			log.Println(err)
 		}
-
-		time.Sleep(30 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }

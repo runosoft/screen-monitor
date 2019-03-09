@@ -38,20 +38,10 @@ func collectSystemStats(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
 
-	reply := make(map[string]interface{})
-	errorStruct := make(map[string]string)
+	osStat := stat.ReturnSystemStats()
 
-	osStat, err := stat.CollectSystemStats()
-	if err != nil {
-		log.Println(err)
-		errorStruct["status"] = "500 Internal Server Error"
-		errorStruct["error"] = "unexpected error while listing addresses"
-		json.NewEncoder(w).Encode(errorStruct)
-		return
-	}
 
-	reply["osStat"] = osStat
-	json.NewEncoder(w).Encode(reply)
+	json.NewEncoder(w).Encode(osStat)
 	return
 }
 
@@ -61,20 +51,10 @@ func collectStrSystemStats(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
 
-	reply := make(map[string]interface{})
-	errorStruct := make(map[string]string)
 
-	strOsStat, err := stat.CollectStrSystemStats()
-	if err != nil {
-		log.Println(err)
-		errorStruct["status"] = "500 Internal Server Error"
-		errorStruct["error"] = "unexpected error while listing addresses"
-		json.NewEncoder(w).Encode(errorStruct)
-		return
-	}
+	strOsStat := stat.ReturnStrSystemStats()
 
-	reply["strOsStat"] = strOsStat
-	json.NewEncoder(w).Encode(reply)
+	json.NewEncoder(w).Encode(strOsStat)
 	return
 }
 
@@ -84,7 +64,6 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
 
-	reply := make(map[string]interface{})
 	errorStruct := make(map[string]string)
 
 	screenStat, err := stat.CollectScreenStats()
@@ -96,8 +75,7 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	reply["result"] = screenStat
-	json.NewEncoder(w).Encode(reply)
+	json.NewEncoder(w).Encode(screenStat)
 	return
 }
 
