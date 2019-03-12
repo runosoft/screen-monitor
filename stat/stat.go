@@ -118,13 +118,14 @@ type SystemScreens struct {
  * we want to check whether active or not */
 type ActiveScreens struct {
 	Names []string `json:"activeScreen"`
+	AllowedIPs []string `json:"allowedIPs"`
 }
 
 var GlobalOsStats *OsStat
 var GlobalStrOsStats *StrOsStat
 var GlobalScreenStats *SystemScreens
 
-var activeScreens ActiveScreens
+var ActiveScreensStruct ActiveScreens
 
 func CollectSystemStats() (*OsStat, error) {
 	memStats, err := memory.Get()
@@ -414,7 +415,7 @@ func updateSystemScreen() []string {
 }
 
 func readActiveScreensConfig(configFileName string) (*ActiveScreens, error) {
-	var activeScreen ActiveScreens
+	//var activeScreen ActiveScreens
 	configFileName, _ = filepath.Abs(configFileName)
 	log.Printf("Reading Active Screens: %v", configFileName)
 
@@ -424,11 +425,11 @@ func readActiveScreensConfig(configFileName string) (*ActiveScreens, error) {
 	}
 	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
-	if err := jsonParser.Decode(&activeScreen); err != nil {
+	if err := jsonParser.Decode(&ActiveScreensStruct); err != nil {
 		return nil, err
 	}
 
-	return &activeScreen, nil
+	return &ActiveScreensStruct, nil
 }
 
 func ReturnSystemStats() *OsStat {

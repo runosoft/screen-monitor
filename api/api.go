@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"encoding/json"
 
@@ -33,10 +34,31 @@ func Start() {
 }
 
 func collectSystemStats(w http.ResponseWriter, req *http.Request) {
+	isAllowed := false
+	ip, _, err := net.SplitHostPort(req.RemoteAddr)
+	if err != nil {
+		log.Println(err)
+	}
+	for _, value := range(stat.ActiveScreensStruct.AllowedIPs){
+		if ip == value {
+			isAllowed = true
+			log.Printf("%s ip is allowed", ip)
+		}
+	}
+
+	if !isAllowed {
+		log.Printf("%s ip is not allowed.\n", ip)
+		return
+	}
+
+	log.Println("requesting ip ", ip)
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
+
+	log.Println(stat.ActiveScreensStruct)
 
 	osStat := stat.ReturnSystemStats()
 
