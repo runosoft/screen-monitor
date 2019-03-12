@@ -3,14 +3,14 @@ package main
 import (
 	"log"
 	"time"
-	"runtime"
+	//"runtime"
 
 	"./stat"
 	"./api"
 )
 
 func main() {
-	runtime.GOMAXPROCS(2)
+	//runtime.GOMAXPROCS(2)
 
 	go api.Start()
 
