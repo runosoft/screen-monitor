@@ -3,37 +3,35 @@ package main
 import (
 	"log"
 	"time"
-	//"runtime"
+	"flag"
+	"os"
 
 	"./stat"
 	"./api"
 )
 
+var options struct {
+	config string
+}
+
 func main() {
-	//runtime.GOMAXPROCS(2)
+	flag.StringVar(&options.config, "config", "", "name of config file json format")
+	flag.Parse()
+
+	if len(os.Args) < 2 {
+		log.Fatal("No args set. At least set --config <config-filename>")
+	}
 
 	go api.Start()
 
-	go runThread()
+	go runThread(options.config)
 
 	quit := make(chan bool)
 	<-quit
-
 }
 
-func runThread() {
+func runThread(config string) {
 	for {
-		/*
-		log.Println("starting system screen update.")
-		systemScreens := stat.UpdateSystemScreen()
-
-		log.Println("reading active screen config.")
-		go readActiveScreensConfig(&activeScreens, "active_screen.json")
-
-		log.Println("checking screens.")
-		go CheckScreens(activeScreens, systemScreens)
-		*/
-
 		_, err := stat.CollectSystemStats()
 		if err != nil {
 			log.Println(err)
@@ -44,14 +42,7 @@ func runThread() {
 			log.Println(err)
 		}
 
-		/*
-		strSystemStats, err := stat.CollectStrSystemStats()
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println(strSystemStats)
-		*/
-		_, err = stat.CollectScreenStats()
+		_, err = stat.CollectScreenStats(config)
 		if err != nil {
 			log.Println(err)
 		}

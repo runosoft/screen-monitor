@@ -122,6 +122,7 @@ type ActiveScreens struct {
 
 var GlobalOsStats *OsStat
 var GlobalStrOsStats *StrOsStat
+var GlobalScreenStats *SystemScreens
 
 var activeScreens ActiveScreens
 
@@ -156,14 +157,6 @@ func CollectSystemStats() (*OsStat, error) {
 		return nil, err
 	}
 
-	//upTimeStr := upTime.String()
-
-	//log.Println(time.Parse(time.UnixDate, upTimeStr))
-
-	//log.Println(upTime.String())
-	//log.Println(upTime.Format("2006-01-02 15:04:05"))
-	//log.Println(strSystemStat)
-
 	var innerOsStat OsStat
 	log.Println("Collecting os stats.")
 
@@ -189,12 +182,6 @@ func CollectSystemStats() (*OsStat, error) {
 	userPercentage := float64(after.User-before.User)/total*100
 	systemPercentage := float64(after.System-before.System)/total*100
 	idlePercentage := float64(after.Idle-before.Idle)/total*100
-
-	/*
-	fmt.Printf("cpu user: %f %%\n", float64(after.User-before.User)/total*100)
-	fmt.Printf("cpu system: %f %%\n", float64(after.System-before.System)/total*100)
-	fmt.Printf("cpu idle: %f %%\n", float64(after.Idle-before.Idle)/total*100)
-	*/
 
 	innerOsStat = OsStat {
 		Timestamp: timestamp,
@@ -257,7 +244,6 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 		sRxBytes := formatSizeUint64(osStats.Network[i].RxBytes)
 		sTxBytes := formatSizeUint64(osStats.Network[i].TxBytes)
 
-		log.Println(osStats.Network[i])
 		tempNetStats := StrNetStats {
 			Name: osStats.Disk[i].Name,
 			RxBytes: sRxBytes,
@@ -311,10 +297,12 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 	return &innerStrOsStat, nil
 }
 
-func CollectScreenStats() (*SystemScreens, error) {
+func CollectScreenStats(config string) (*SystemScreens, error) {
 	log.Println("Collecting screen stats.")
 
-	activeScreen, err := readActiveScreensConfig("active_screen.json")
+	var innerSystemScreens SystemScreens
+
+	activeScreen, err := readActiveScreensConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -330,11 +318,14 @@ func CollectScreenStats() (*SystemScreens, error) {
 
 	timestamp := time.Now().Unix()
 
-	return &SystemScreens{
+	GlobalScreenStats = &innerSystemScreens
+
+	innerSystemScreens = SystemScreens{
 		Timestamp: timestamp,
 		Hostname: hostname,
 		Screens: checkScreens,
-	}, nil
+	}
+	return &innerSystemScreens, nil
 }
 
 func formatSizeUint64(data uint64) string {
@@ -374,12 +365,11 @@ func CheckScreens(activeScreens *ActiveScreens, systemScreens []string) []System
 				Name: value,
 				Up: false,
 			}
-			sendCrashMessage(value)
+			//sendCrashMessage(value)
 			log.Printf("%s is NOT running\n", value)
 		}
 		sysScreens = append(sysScreens, systemScreen)
 	}
-
 	return sysScreens
 }
 
@@ -390,10 +380,6 @@ func contains(a []string, x string) bool {
 		}
 	}
 	return false
-}
-
-func sendCrashMessage(screenName string) {
-	log.Printf("%s is crashed.\n", screenName)
 }
 
 /* Parses output of screen -ls command to SystemScreens
@@ -451,4 +437,8 @@ func ReturnSystemStats() *OsStat {
 
 func ReturnStrSystemStats() *StrOsStat {
 	return GlobalStrOsStats
+}
+
+func ReturnScreenStats() *SystemScreens {
+	return GlobalScreenStats
 }

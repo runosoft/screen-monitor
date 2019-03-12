@@ -64,16 +64,15 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
 
-	errorStruct := make(map[string]string)
-
-	screenStat, err := stat.CollectScreenStats()
+	screenStat := stat.ReturnScreenStats()
+	/*
 	if err != nil {
 		log.Println(err)
 		errorStruct["status"] = "500 Internal Server Error"
 		errorStruct["error"] = "unexpected error while listing addresses"
 		json.NewEncoder(w).Encode(errorStruct)
 		return
-	}
+	}*/
 
 	json.NewEncoder(w).Encode(screenStat)
 	return
