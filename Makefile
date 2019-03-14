@@ -14,3 +14,4 @@ deps:
 	$(GOGET) github.com/mackerelio/go-osstat/network
 	$(GOGET) github.com/mackerelio/go-osstat/loadavg
 	$(GOGET) github.com/gorilla/mux
+	$(GOGET) github.com/arsmine/screen-monitor
