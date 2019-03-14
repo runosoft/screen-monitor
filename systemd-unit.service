@@ -1,0 +1,17 @@
+[Unit]
+Description=Screen Monitor service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=<username>
+ExecStart=<path/to/screen-monitor>
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=screen-monitor-log
+
+[Install]
+WantedBy=multi-user.target
