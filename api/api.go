@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"encoding/json"
 
-	"../stat"
+	"github.com/arsmine/screen-monitor/stat"
 
 	"github.com/gorilla/mux"
 )

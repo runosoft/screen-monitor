@@ -6,8 +6,8 @@ import (
 	"flag"
 	"os"
 
-	"./stat"
-	"./api"
+	"github.com/arsmine/screen-monitor/stat"
+	"github.com/arsmine/screen-monitor/api"
 )
 
 var options struct {
