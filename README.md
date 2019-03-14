@@ -13,7 +13,7 @@ $ make
 ```
 
 ## Usage
-./screen-monitor --config example.json
+`./screen-monitor --config example.json`
 
 Add screen names that you want to check to a json file in this format:
 ```json
@@ -26,7 +26,7 @@ Add screen names that you want to check to a json file in this format:
 ## Command-Line Arguments
 
 ### required
-* --config <config.json>
+* `--config <config.json>`
 
 ## Dependencies
 |Package|
