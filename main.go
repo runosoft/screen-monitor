@@ -12,14 +12,16 @@ import (
 
 var options struct {
 	config string
+	interval string
 }
 
 func main() {
 	flag.StringVar(&options.config, "config", "", "name of config file json format")
+	flag.StringVar(&options.interval, "interval", "", "check interval of general operations")
 	flag.Parse()
 
-	if len(os.Args) < 2 {
-		log.Fatal("No args set. At least set --config <config-filename>")
+	if len(os.Args) < 3 {
+		log.Fatal("Not enough args set. set --config <config-filename> and --interval <duration>")
 	}
 
 	go api.Start()
@@ -46,6 +48,11 @@ func runThread(config string) {
 		if err != nil {
 			log.Println(err)
 		}
-		time.Sleep(10 * time.Second)
+
+		interval, err := time.ParseDuration(options.interval)
+		if err != nil {
+			log.Fatalf("Couldn't parse interval")
+		}
+		time.Sleep(interval)
 	}
 }
