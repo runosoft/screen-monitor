@@ -1,7 +1,7 @@
 # screen-monitor
 
 ## What's screen-monitor?
-screen-monitor is a tool written in Golang that allows you to serve your server OS stats and screens stats
+screen-monitor is a tool written in Golang that allows you to serve your server OS stats' and screen stats'
 through API.
 
 ## Installation
