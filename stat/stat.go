@@ -18,8 +18,7 @@ import(
 	"github.com/mackerelio/go-osstat/loadavg"
 )
 
-/* string os stats structs */
-
+// string os stats structs 
 type StrCPUStat struct {
 	User string `json:"user"`
 	System string `json:"system"`
@@ -66,7 +65,7 @@ type StrNetStats struct {
 	TxBytes string `json:"txBytes"`
 }
 
-/* pure os stat structs */
+// pure os stat structs
 
 type OsStat struct {
 	Timestamp int64 `json:"timestamp"`
@@ -102,7 +101,7 @@ type LoadAverage struct {
 	Avg15 float64 `json:"avg15"`
 }
 
-/* Holds screen informations from command */
+// Holds screen informations from command
 type SystemScreen struct {
 	Name string `json:"name"`
 	Up bool `json:"up"`
@@ -114,8 +113,9 @@ type SystemScreens struct {
 	Screens []SystemScreen `json:"screens"`
 }
 
-/* Holds name of the screen that
- * we want to check whether active or not */
+// Holds name of the screens that
+// we want to check whether active or not
+// and list of allowd ips.
 type ActiveScreens struct {
 	Names []string `json:"activeScreen"`
 	AllowedIPs []string `json:"allowedIPs"`
@@ -127,6 +127,8 @@ var GlobalScreenStats *SystemScreens
 
 var ActiveScreensStruct ActiveScreens
 
+// CollectSystemStats is used for parsing collected
+// information about system to api endpoint.
 func CollectSystemStats() (*OsStat, error) {
 	memStats, err := memory.Get()
 	if err != nil {
@@ -161,8 +163,11 @@ func CollectSystemStats() (*OsStat, error) {
 	var innerOsStat OsStat
 	log.Println("Collecting os stats.")
 
+	// get the time when collecting os stats
 	timestamp := time.Now().Unix()
 
+	// get the hostname to indicate which host's
+	// stats collecting.
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -217,13 +222,16 @@ func CollectSystemStats() (*OsStat, error) {
 	return &innerOsStat, nil
 }
 
+// CollectStrSystemStats is used for parsing collected
+// information about system in human-readable format
+// to api endpoint.
 func CollectStrSystemStats() (*StrOsStat, error) {
 	osStats, err := CollectSystemStats()
 	if err != nil {
 		return nil, err
 	}
 
-		/* parse disk stats */
+	// parse disk stats
 	var strDiskStats []StrDiskStats
 
 	for i := 0; i <= len(osStats.Disk)-1; i++ {
@@ -238,7 +246,7 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 		strDiskStats = append(strDiskStats, tempDiskStats)
 	}
 
-	/* parse network stats */
+	// parse network stats
 	var strNetStats []StrNetStats
 
 	for i := 0; i <= len(osStats.Network)-1; i++ {
@@ -252,14 +260,6 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 		}
 		strNetStats = append(strNetStats, tempNetStats)
 	}
-
-	//upTimeStr := upTime.String()
-
-	//log.Println(time.Parse(time.UnixDate, upTimeStr))
-
-	//log.Println(upTime.String())
-	//log.Println(upTime.Format("2006-01-02 15:04:05"))
-	//log.Println(strSystemStat)
 
 	timestamp := time.Now()
 	timestampStr := timestamp.Format("15:04:05 2006 Jan _2")
@@ -298,6 +298,8 @@ func CollectStrSystemStats() (*StrOsStat, error) {
 	return &innerStrOsStat, nil
 }
 
+// CollectScreenStats is used for parsing collected
+// information about screens to api endpoint.
 func CollectScreenStats(config string) (*SystemScreens, error) {
 	log.Println("Collecting screen stats.")
 
@@ -329,6 +331,9 @@ func CollectScreenStats(config string) (*SystemScreens, error) {
 	return &innerSystemScreens, nil
 }
 
+// formatSizeUint64 is used for formatting
+// uint64 data type to string.
+// using for parsing OsStat in string format.
 func formatSizeUint64(data uint64) string {
 	var units = [5]string{"B", "KB", "MB", "GB", "TB"}
 
@@ -344,11 +349,18 @@ func formatSizeUint64(data uint64) string {
 	return s
 }
 
+// formatSizeFloat64 is used for formatting
+// float64 data type to string.
+// using for parsing OsStat in string format. 
 func formatSizeFloat64(data float64) string {
 	s := strconv.FormatFloat(data, 'f', 2, 64)
 	return s
 }
 
+// CheckScreens takes ActiveScreens struct and
+// array of system screens(systemScreens)  as parameters.
+// if systemScreens array contains screen name  that
+// comes from ActiveScreens struct, marks this screen up.
 func CheckScreens(activeScreens *ActiveScreens, systemScreens []string) []SystemScreen{
 	var sysScreens []SystemScreen
 
@@ -366,7 +378,6 @@ func CheckScreens(activeScreens *ActiveScreens, systemScreens []string) []System
 				Name: value,
 				Up: false,
 			}
-			//sendCrashMessage(value)
 			log.Printf("%s is NOT running\n", value)
 		}
 		sysScreens = append(sysScreens, systemScreen)
@@ -383,8 +394,8 @@ func contains(a []string, x string) bool {
 	return false
 }
 
-/* Parses output of screen -ls command to SystemScreens
- * struct. */
+// updateSystemScreen parses output of screen -ls command to
+// string array.
 func updateSystemScreen() []string {
 	var sysScreenNames []string
 
@@ -414,8 +425,9 @@ func updateSystemScreen() []string {
 	return sysScreenNames
 }
 
+// readActiveScreensConfig reads config file and parses
+// screen names that we want to check.
 func readActiveScreensConfig(configFileName string) (*ActiveScreens, error) {
-	//var activeScreen ActiveScreens
 	configFileName, _ = filepath.Abs(configFileName)
 	log.Printf("Reading Active Screens: %v", configFileName)
 
@@ -432,14 +444,20 @@ func readActiveScreensConfig(configFileName string) (*ActiveScreens, error) {
 	return &ActiveScreensStruct, nil
 }
 
+// ReturnSystemStats returns OsStat's global variable.
+// Calling by api.
 func ReturnSystemStats() *OsStat {
 	return GlobalOsStats
 }
 
+// ReturnStrSystemStats returns StrOsStat's global variable.
+// Calling by api.
 func ReturnStrSystemStats() *StrOsStat {
 	return GlobalStrOsStats
 }
 
+// ReturnScreenStats returns SystemScreens' global variable.
+// Calling by api.
 func ReturnScreenStats() *SystemScreens {
 	return GlobalScreenStats
 }
