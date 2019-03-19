@@ -1,3 +1,4 @@
 {
-	"activeScreen": ["wait"]
+	"activeScreen": ["wait"],
+	"allowdIps": ["ip-address"]
 }
