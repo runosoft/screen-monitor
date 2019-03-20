@@ -24,7 +24,7 @@ Add screen names that you want to check to a json file in this format:
 ```
 
 ## Run as a Linux service
-* add `screen-monitor.service` to `/etc/systemd/system/screen-monitor.sevice` (don't forget the fill the <...>)
+* add `screen-monitor.service` to `/etc/systemd/system/screen-monitor.service` (don't forget the fill the <...>)
 * to send logs to `/var/log/screen-monitor.log`:
   - add `screen-monitor-log.conf` to `/etc/rsyslog.d/screen-monitor-log.conf` (don't forget the fill the <...>)
 * `$ systemctl start screen-monitor.service`
