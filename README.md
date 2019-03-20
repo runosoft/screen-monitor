@@ -18,6 +18,8 @@ $ make
 Add screen names that you want to check to a json file in this format:
 ```json
 {
+    "interval": "10s",
+	"listen": "0.0.0.0:8080",
 	"activeScreen": ["screen-name"],
 	"allowedIPs": ["ip-address"]
 }
