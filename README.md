@@ -19,7 +19,7 @@ Add screen names that you want to check to a json file in this format:
 ```json
 {
 	"activeScreen": ["screen-name"],
-	"allowdIps": ["ip-address"]
+	"allowedIPs": ["ip-address"]
 }
 ```
 
