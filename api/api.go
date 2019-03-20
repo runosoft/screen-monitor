@@ -1,18 +1,19 @@
 package api
 
 import (
+	"encoding/json"
 	"log"
 	"net"
 	"net/http"
-	"encoding/json"
 
-	"github.com/arsmine/screen-monitor/stat"
+	"../config"
+	"../stat"
 
 	"github.com/gorilla/mux"
 )
 
-func Start() {
-	apiListen := "0.0.0.0:8080"
+func Start(mainCfg *config.MainConfig) {
+	apiListen := mainCfg.Listen
 
 	router := mux.NewRouter()
 	log.Println("Starting the Api")
@@ -25,10 +26,10 @@ func Start() {
 	router.HandleFunc("/api/screens",
 		collectScreenStats).Methods("GET")
 	/*
-	router.NotFoundHandler = http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-		json.NewEncoder(w).Encode("Message": "An unexpected request. Check url"})
-	})*/
+		router.NotFoundHandler = http.HandlerFunc(
+			func(w http.ResponseWriter, req *http.Request) {
+			json.NewEncoder(w).Encode("Message": "An unexpected request. Check url"})
+		})*/
 
 	log.Println(http.ListenAndServe(apiListen, router))
 }
@@ -39,7 +40,7 @@ func collectSystemStats(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	for _, value := range(stat.ActiveScreensStruct.AllowedIPs){
+	for _, value := range stat.ActiveScreensStruct.AllowedIPs {
 		if ip == value {
 			isAllowed = true
 			log.Printf("%s ip is allowed", ip)
@@ -60,7 +61,6 @@ func collectSystemStats(w http.ResponseWriter, req *http.Request) {
 
 	osStat := stat.ReturnSystemStats()
 
-
 	json.NewEncoder(w).Encode(osStat)
 	return
 }
@@ -71,7 +71,7 @@ func collectStrSystemStats(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	for _, value := range(stat.ActiveScreensStruct.AllowedIPs){
+	for _, value := range stat.ActiveScreensStruct.AllowedIPs {
 		if ip == value {
 			isAllowed = true
 			log.Printf("%s ip is allowed", ip)
@@ -100,7 +100,7 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	for _, value := range(stat.ActiveScreensStruct.AllowedIPs){
+	for _, value := range stat.ActiveScreensStruct.AllowedIPs {
 		if ip == value {
 			isAllowed = true
 			log.Printf("%s ip is allowed", ip)
@@ -119,18 +119,14 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 
 	screenStat := stat.ReturnScreenStats()
 	/*
-	if err != nil {
-		log.Println(err)
-		errorStruct["status"] = "500 Internal Server Error"
-		errorStruct["error"] = "unexpected error while listing addresses"
-		json.NewEncoder(w).Encode(errorStruct)
-		return
-	}*/
+		if err != nil {
+			log.Println(err)
+			errorStruct["status"] = "500 Internal Server Error"
+			errorStruct["error"] = "unexpected error while listing addresses"
+			json.NewEncoder(w).Encode(errorStruct)
+			return
+		}*/
 
 	json.NewEncoder(w).Encode(screenStat)
 	return
 }
-
-
-
-
