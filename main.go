@@ -1,30 +1,50 @@
 package main
 
 import (
-	"log"
-	"time"
+	"encoding/json"
 	"flag"
+	"log"
 	"os"
+	"path/filepath"
+	"time"
 
-	"github.com/arsmine/screen-monitor/stat"
-	"github.com/arsmine/screen-monitor/api"
+	"./api"
+	"./config"
+	"./stat"
 )
 
 var options struct {
-	config string
+	config   string
 	interval string
+}
+
+var mainCfg config.MainConfig
+
+func readConfig(cfg *config.MainConfig, configFileName string) {
+	configFileName, _ = filepath.Abs(configFileName)
+	log.Printf("Loading config: %v", configFileName)
+
+	configFile, err := os.Open(configFileName)
+	if err != nil {
+		log.Fatal("File error: ", err.Error())
+	}
+	defer configFile.Close()
+	jsonParser := json.NewDecoder(configFile)
+	if err := jsonParser.Decode(&cfg); err != nil {
+		log.Fatal("Config error: ", err.Error())
+	}
 }
 
 func main() {
 	flag.StringVar(&options.config, "config", "", "name of config file json format")
-	flag.StringVar(&options.interval, "interval", "", "check interval of general operations")
 	flag.Parse()
 
-	if len(os.Args) < 3 {
-		log.Fatal("Not enough args set. set --config <config-filename> and --interval <duration>")
+	if len(os.Args) < 2 {
+		log.Fatal("Not enough args set. set --config <config-filename>.")
 	}
 
-	go api.Start()
+	readConfig(&mainCfg, options.config)
+	go api.Start(&mainCfg)
 
 	go runThread(options.config)
 
@@ -34,6 +54,8 @@ func main() {
 
 func runThread(config string) {
 	for {
+		readConfig(&mainCfg, config)
+
 		_, err := stat.CollectSystemStats()
 		if err != nil {
 			log.Println(err)
@@ -49,10 +71,11 @@ func runThread(config string) {
 			log.Println(err)
 		}
 
-		interval, err := time.ParseDuration(options.interval)
+		interval, err := time.ParseDuration(mainCfg.Interval)
 		if err != nil {
 			log.Fatalf("Couldn't parse interval")
 		}
+
 		time.Sleep(interval)
 	}
 }
