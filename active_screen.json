@@ -1,4 +1,6 @@
 {
+	"interval": "10s",
+	"listen": "0.0.0.0:8080",
 	"activeScreen": ["wait"],
-	"allowdIps": ["ip-address"]
+	"allowedIPs": ["ip-address"]
 }
