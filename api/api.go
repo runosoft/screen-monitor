@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	"../config"
-	"../stat"
+	"github.com/arsmine/screen-monitor/config"
+	"github.com/arsmine/screen-monitor/stat"
 
 	"github.com/gorilla/mux"
 )

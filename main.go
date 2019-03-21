@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"./api"
-	"./config"
-	"./stat"
+	"github.com/arsmine/screen-monitor/api"
+	"github.com/arsmine/screen-monitor/config"
+	"github.com/arsmine/screen-monitor/stat"
 )
 
 var options struct {
