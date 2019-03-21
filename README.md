@@ -13,7 +13,7 @@ $ make
 ```
 
 ## Usage
-`./screen-monitor --config example.json --interval 30s`
+`./screen-monitor --config example.json`
 
 Add screen names that you want to check to a json file in this format:
 ```json
