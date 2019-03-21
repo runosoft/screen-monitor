@@ -15,13 +15,18 @@ $ make
 ## Usage
 `./screen-monitor --config example.json`
 
-Add screen names that you want to check to a json file in this format:
+### config.json
+* interval: Time interval(10s, 1m etc.) that how frequently you what to check screens.
+* listen: IP address and port that you want to serve API.
+* activeScreen: screen names that you want to check.
+* allowedIPs: IP-address that can access your API.
+
 ```json
 {
 	"interval": "10s",
 	"listen": "0.0.0.0:8080",
 	"activeScreen": ["screen-name"],
-	"allowedIPs": ["ip-address"]
+	"allowedIPs": ["1.12.14.16"]
 }
 ```
 
@@ -38,7 +43,6 @@ Add screen names that you want to check to a json file in this format:
 
 ### required
 * `--config <config.json>`
-* `--interval <30s>`
 
 ## Dependencies
 |Package|
