@@ -16,10 +16,10 @@ $ make
 `./screen-monitor --config example.json`
 
 ### config.json
-* interval: Time interval(10s, 1m etc.) that how frequently you what to check screens.
-* listen: IP address and port that you want to serve API.
-* activeScreen: screen names that you want to check.
-* allowedIPs: IP-address that can access your API.
+* `interval`: Time interval(10s, 1m etc.) that how frequently you what to check screens.
+* `listen`: IP address and port that you want to serve API.
+* `activeScreen`: screen names that you want to check.
+* `allowedIPs`: IP-addresses that can access your API.
 
 ```json
 {
