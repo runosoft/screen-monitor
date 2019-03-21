@@ -4,4 +4,7 @@ go:
   "1.11"
 notifications:
   email:
+    recipients:
+      - h.emreari@protonmail.com
+      - dev@arsmine.com
     on_success: never
