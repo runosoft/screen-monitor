@@ -1,8 +1,8 @@
 # screen-monitor
 
 ## What's screen-monitor?
-screen-monitor is a tool written in Golang that allows you to serve your server OS stats' and screen stats'
-through API.
+screen-monitor is a tool written in Golang that allows you to serve your server OS and screen stats'
+through an API.
 
 ## Installation
 * You need Golang Version 1.9.7.
@@ -16,7 +16,7 @@ $ make
 `./screen-monitor --config example.json`
 
 ### config.json
-* `interval`: Time interval(10s, 1m etc.) that how frequently you what to check screens.
+* `interval`: Time interval(10s, 1m etc.) that how frequently you want to collect OS and screen stats.
 * `listen`: IP address and port that you want to serve API.
 * `activeScreen`: screen names that you want to check.
 * `allowedIPs`: IP-addresses that can access your API.
