@@ -12,6 +12,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Exception struct {
+	Message string `json:"message"`
+}
+
 func Start(mainCfg *config.MainConfig) {
 	apiListen := mainCfg.Listen
 
@@ -25,16 +29,21 @@ func Start(mainCfg *config.MainConfig) {
 		collectStrSystemStats).Methods("GET")
 	router.HandleFunc("/api/screens",
 		collectScreenStats).Methods("GET")
-	/*
-		router.NotFoundHandler = http.HandlerFunc(
-			func(w http.ResponseWriter, req *http.Request) {
-			json.NewEncoder(w).Encode("Message": "An unexpected request. Check url"})
-		})*/
+
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		json.NewEncoder(w).Encode(Exception{Message: "An unexpected request. Check url"})
+	})
 
 	log.Println(http.ListenAndServe(apiListen, router))
 }
 
 func collectSystemStats(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusOK)
+
+	errorStruct := make(map[string]string)
 	isAllowed := false
 	ip, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
@@ -48,14 +57,12 @@ func collectSystemStats(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !isAllowed {
+		errorStruct["status"] = "403 Forbidden"
+		errorStruct["You are not allowed to perform this action."]
+		json.NewEncoder(w).Encode(errorStruct)
 		log.Printf("%s ip is not allowed.\n", ip)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.WriteHeader(http.StatusOK)
 
 	log.Println(stat.ActiveScreensStruct)
 
@@ -66,6 +73,12 @@ func collectSystemStats(w http.ResponseWriter, req *http.Request) {
 }
 
 func collectStrSystemStats(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusOK)
+
+	errorStruct := make(map[string]string)
 	isAllowed := false
 	ip, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
@@ -79,14 +92,12 @@ func collectStrSystemStats(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !isAllowed {
+		errorStruct["status"] = "403 Forbidden"
+		errorStruct["You are not allowed to perform this action."]
+		json.NewEncoder(w).Encode(errorStruct)
 		log.Printf("%s ip is not allowed.\n", ip)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.WriteHeader(http.StatusOK)
 
 	strOsStat := stat.ReturnStrSystemStats()
 
@@ -95,6 +106,12 @@ func collectStrSystemStats(w http.ResponseWriter, req *http.Request) {
 }
 
 func collectScreenStats(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusOK)
+
+	errorStruct := make(map[string]string)
 	isAllowed := false
 	ip, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
@@ -108,14 +125,12 @@ func collectScreenStats(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !isAllowed {
+		errorStruct["status"] = "403 Forbidden"
+		errorStruct["You are not allowed to perform this action."]
+		json.NewEncoder(w).Encode(errorStruct)
 		log.Printf("%s ip is not allowed.\n", ip)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.WriteHeader(http.StatusOK)
 
 	screenStat := stat.ReturnScreenStats()
 	/*
